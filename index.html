@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+    <script src="jquery-1.8.2.min.js"></script>
+    <script src="jquery-ui-1.9.1.custom.min.js"></script>
+    <script src="knockout-2.2.0.js"></script>
+    <script src="knockout.mapping-latest.js"></script>
+    <script src="metaproject.min.js"></script>
+
+</head>
+<body>
+
+<ul data-bind="foreach: tasks">
+    <li data-bind="text: task"></li>
+</ul>
+<div data-bind="with: grid">
+    <section style="padding-bottom: 60px;">
+        <table class="table table-bordered table-striped table-condensed">
+            <thead>
+            <tr>
+                <!-- ko foreach: columns -->
+                <th data-bind="html: label"></th>
+                <!-- /ko -->
+                <!-- ko if: actions.length > 0 -->
+                <th></th>
+                <!-- /ko -->
+            </tr>
+            </thead>
+            <tbody data-bind="foreach: data">
+            <tr data-bind="">
+                <!-- ko foreach: $parent.columns -->
+                <td data-bind="html: typeof text == 'function' ? text($parent) : $parent[text]"></td>
+                <!-- /ko -->
+                <td data-bind="foreach: $parent.actions">
+                    <button class="btn"
+                            data-bind="click: function() { fn($parent); }, html: label, css: $data.css || {}"></button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+
+    </section>
+</div>
+
+<div data-bind="with: editor.current">
+    <div style="background-color: black; position: absolute; top: 0; left: 0; bottom: 0; right: 0">
+
+        <div style="background-color: white">
+            ID: <!-- ko if: id --><span data-bind="text: id"></span><!-- /ko -->
+            <!-- ko ifnot: id -->New<!-- /ko --><br/>
+            Task: <span data-bind="text: task"></span><br/>
+            <button data-bind="click: function() { $root.editor.close() }">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    var TASKS = [
+        { id: 1, task: 'coisa'},
+        { id: 2, task: 'outracoisa'}
+    ];
+
+    jQuery(function ($) {
+
+        var Task = metaproject.Model({
+            id: null,
+            task: null
+        });
+
+        var ds = new metaproject.DataSource('../objectiveweb/index.php/task', { model: Task });
+
+        ds.post = function (data, callback) {
+
+        };
+
+        ds.put = function (id, data, callback) {
+
+        };
+
+        ds.get = function (path, params, callback) {
+
+            if (typeof(params) == 'function') {
+                callback = params;
+            }
+
+            // params = { task: 'c%' }
+
+            if (path == '/') {
+                callback(TASKS);
+            }
+            else {
+
+                var id = path.id;
+
+                for(var i = 0; i < TASKS.length; i++) {
+                    if(id == TASKS[i].id) {
+                        callback(TASKS[i]);
+                        return;
+                    }
+
+                }
+
+                callback(null);
+
+            }
+        };
+
+        function TodoViewModel() {
+            var self = this;
+
+            self.tasks = new ds.Nav();
+
+            self.editor = new ds.Editor({
+                'save': function() {
+                    self.editor.close();
+                }
+            });
+
+            self.grid = new metaproject.ui.Grid(self.tasks, {
+                header: 'oi',
+                columns: [
+                    { label: 'ID', text: 'id' },
+                    { label: 'Task', text: 'task'}
+                ],
+                actions: [{
+                    'label': 'Show Details',
+                    'fn': function(model) {
+                        self.editor.load(model);
+                    }
+                }]
+            });
+        }
+
+
+        ko.applyBindings(new TodoViewModel());
+    });
+</script>
+</body>
+</html>
